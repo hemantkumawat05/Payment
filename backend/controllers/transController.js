@@ -3,7 +3,7 @@ import userModel from "../models/userModel.js";
 const checkblance=async (req,res)=>
 {
     const {userid,pin}=req.body;
-    const user=await userModel.findOne({userid})
+    const user=await userModel.findById({userid})
     if(!user)
     {
         return res.json({success:false,message:"Invalid UserId"})
@@ -14,7 +14,7 @@ const checkblance=async (req,res)=>
     }
     return res.json({
         success:true,
-        blance:user.amount,
+        balance:user.amount,
     })
 }
 
