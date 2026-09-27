@@ -6,7 +6,7 @@ const userSchema =new mongoose.Schema({
     password:{type:String,required:true},
     amount:{type:Number,required:true,default:10000},
     pin:{type:Number,required:true,default:1234,},
-    transactions:{type:Object,default:{}}
+    transactions:{type:[Object],default:[]}
 },{minimize:false})
 
 const userModel=mongoose.models.user || mongoose.model("user",userSchema)
