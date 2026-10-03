@@ -56,17 +56,17 @@ const Showusers = ({ token }) => {
                     {user && user.length === 0 && <p>No users found.</p>}
 
                     <ul>
-                        <li className='flex'>
+                        <li className='grid grid-cols-5 gap-4 bg-[#E2E8F0] border-[#E2E8F0] rounded-lg border-1 my-2'>
                                 <div className='px-3 py-2 font-bold'>S No.</div>
                                 <div className='px-3 py-2 font-bold'>
                                     User Name
                                 </div>
                                 <div className='px-40 py-2 font-bold'>Id</div> 
-                                <div className='px-2 py-2 font-bold'>Verified</div>
+                                <div className='px-2 py-2 font-bold'>Status</div>
                                 <button className='px-10 py-2 font-bold'>Action</button>
                             </li>
                         {user && user.map((e,index) => (
-                            <li key={e._id} className='flex'>
+                            <li key={e._id} className='grid grid-cols-5 gap-4 bg-[#F8FAFC] hover:bg-[#E2E8F0] border-[#E2E8F0] rounded-lg border-1 my-2'>
                                 <div className='px-3 py-2'>{index+1}.</div>
                                 <div className='flex mx-5'>
                                     <div className='bg-black text-white rounded-full px-3 py-2 mx-3 my-2'>H</div>
@@ -76,7 +76,7 @@ const Showusers = ({ token }) => {
                                     </div>
                                 </div>
                                 <div className='text-gray-700 mx-5 my-2'>{e._id}</div> 
-                                <div className='text-green-600 bg-green-100  my-2 px-3 rounded-lg mx-5 text-center'>Verified</div>
+                                <div className='text-green-600 bg-green-100 my-2 px-3 py-2 rounded-lg mx-5 text-center font-semibold'>Verified</div>
                                 <button onClick={() => setSelectedUserId(e._id)} className='bg-blue-900 text-white hover:bg-blue-800 rounded-lg my-2 px-3'>Send Amount</button>
                             </li>
                         ))}
