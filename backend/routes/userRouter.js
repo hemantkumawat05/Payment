@@ -7,7 +7,7 @@ userRouter.post("/signin",userSignIn)
 userRouter.post("/signup",userSignUp)
 userRouter.post("/update",userAuth,updateUserCredentials)
 userRouter.get("/profile",userAuth,getUserProfile)
-userRouter.get('/userdata',userData)
+userRouter.get('/userdata',userAuth,userData)
 
 
 export default userRouter

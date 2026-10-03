@@ -4,13 +4,10 @@ const userData=async(req,res)=>
 {
     try
     {
-        const {excludeId}=req.query
-          const data = await userModel.find({ _id: { $ne: excludeId } }).select('name');
-        if(!data || data.length===0)
-        {
-            return res.json({success:false,message:"User Not Found"})
-        }
-        res.status(200).json({success:true,users:data})
+        const excludeId = req.userId || req.query.excludeId;
+        const filter = excludeId ? { _id: { $ne: excludeId } } : {};
+        const data = await userModel.find(filter).select('name');
+        res.status(200).json({success:true,users: data || []})
     }
     catch(error)
     {

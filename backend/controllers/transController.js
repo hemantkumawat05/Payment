@@ -103,15 +103,14 @@ import userModel from "../models/userModel.js";
 
 const checkblance = async (req, res) => {
     try {
-        // CORRECTION: Standardized to 'userId' (CamelCase) and extracted 'pin'
         const { userId, pin } = req.body;
+        const targetUserId = req.userId || userId;
         
-        // CORRECTION: Ensure BOTH fields are validated before querying MongoDB
-        if (!userId || !pin) {
+        if (!targetUserId || !pin) {
             return res.json({ success: false, message: "UserId and Pin are required fields" });
         }
         
-        const user = await userModel.findById(userId);
+        const user = await userModel.findById(targetUserId);
         if (!user) {
             return res.json({ success: false, message: "Invalid User ID" });
         }
@@ -132,7 +131,8 @@ const checkblance = async (req, res) => {
 const sendAmount = async (req, res) => {
     try {
         const { senderId, reciverid, amount, senderPin } = req.body;
-        if (!senderId || !reciverid || !amount || !senderPin) {
+        const actualSenderId = req.userId || senderId;
+        if (!actualSenderId || !reciverid || !amount || !senderPin) {
             return res.json({ success: false, message: "Missing required fields" });
         }
         const parsedAmount = Number(amount);
@@ -140,7 +140,7 @@ const sendAmount = async (req, res) => {
             return res.json({ success: false, message: "Invalid transaction amount" });
         }
 
-        const sender = await userModel.findById(senderId);
+        const sender = await userModel.findById(actualSenderId);
         if (!sender) {
             return res.json({ success: false, message: "Sender Not Exists" });
         }
@@ -179,7 +179,7 @@ const sendAmount = async (req, res) => {
         }
         reciver.transactions.push({
             name: sender.name,
-            id: senderId,
+            id: actualSenderId,
             amount: parsedAmount,
             send: false,
             date: new Date()
