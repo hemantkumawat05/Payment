@@ -2,11 +2,10 @@ import React from 'react'
 import Navbar from './Navbar'
 import Dashboard from './Dashboard'
 
-const Home = () => {
+const Home = ({token}) => {
   return (
     <div className=''>
-      <Navbar/>
-      <Dashboard/>
+      <Dashboard token={token}/>
     </div>
   )
 }

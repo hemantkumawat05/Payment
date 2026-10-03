@@ -3,23 +3,23 @@ import React from 'react'
 import { useEffect } from 'react'
 import { useState } from 'react'
 
-const Sendmoney = ({userId}) => {
-    const [pin,setPin]=useState()
-    const [ammount,setAmmount]=useState()
+const Sendmoney = ({userId,token}) => {
+    const [pin,setPin]=useState('')
+    const [ammount,setAmmount]=useState('')
 
     const sendammount=async()=>
     {
         try
         {
-            if(!pin || pin.length!==6)
+            if(!pin)
             {
-                return alert("Enter 6 Digit Valid Pin")
+                return alert("Enter Valid Pin")
             }
             if(!ammount || Number(ammount) <= 0)
             {
                 return alert("Enter a valid amount")
             }
-            const response= await axios.post('http://localhost:3000/api/transaction/sendamount',{reciverid:userId,amount:ammount,senderPin:pin,senderId:'6ab4e5bcd5a3b8617e3c7c6c'})
+            const response= await axios.post('http://localhost:3000/api/transaction/sendamount',{reciverid:userId,amount:ammount,senderPin:pin},{ headers: { token } })
             if(!response.data.success)
             {
                 return alert(response.data.message)
@@ -47,7 +47,7 @@ const Sendmoney = ({userId}) => {
         </div>
         <div>
             <label>Enter the Ammount</label>
-            <input type="Number" placeholder='₹ 5000' onChange={(e)=>setAmmount(e.target.value)} />
+            <input value={ammount} type="Number" placeholder='₹ 5000' onChange={(e)=>setAmmount(e.target.value)} />
         
         
         
@@ -63,7 +63,7 @@ const Sendmoney = ({userId}) => {
         </div>
         <div>
             <label>Enter The Pin</label>
-            <input type="Number"placeholder='123456' onChange={(e)=>setPin(e.target.value)}/>
+            <input value={pin} type="Number"placeholder='123456' onChange={(e)=>setPin(e.target.value)}/>
         
         
 
