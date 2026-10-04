@@ -11,9 +11,11 @@ const Navbar = ({ setToken }) => {
       <div className='flex gap-5'>
         <Link to='/'><div className='bg-[#0F4A8A] py-2 px-3 rounded-lg text-white font-bold cursor-pointer hover:bg-[#0369A1]'>Dashboard</div></Link>
         <Link to='/transcation'><div className='bg-[#0F4A8A] py-2 px-3 rounded-lg text-white font-bold cursor-pointer hover:bg-[#0369A1]'>Transcation</div> </Link>
+        <Link to='/setting'><div className='bg-[#0F4A8A] py-2 px-3 rounded-lg text-white font-bold cursor-pointer hover:bg-[#0369A1]'>Setting</div> </Link>
+
       </div>
       <div className='flex gap-4 mx-5'>
-        <div className='bg-blue-400 py-2 px-4 rounded-full text-white font-bold cursor-pointer hover:bg-blue-600'>P</div>
+        <Link to='/profile'><div className='bg-blue-400 py-2 px-4 rounded-full text-white font-bold cursor-pointer hover:bg-blue-600'>P</div></Link>
 
         <div onClick={() => { if (setToken) setToken(''); localStorage.removeItem('token'); }} className='bg-red-700 py-2 px-3 rounded-lg text-white font-bold cursor-pointer hover:bg-red-800'>Logout</div>
       </div>
