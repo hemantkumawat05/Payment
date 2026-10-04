@@ -8,9 +8,12 @@ const createToken = (id) => {
 };
 
 
-
+let userID=0
 const userSignUp = async (req, res) => {
     try {
+        // const userID=0
+        userID=userID+1
+        console.log(userID)
         const { name, email, pin, amount, password } = req.body;
         if (!name || !email || !pin || !password || !amount) {
             return res.json({ success: false, message: "required All Details" })
@@ -26,7 +29,7 @@ const userSignUp = async (req, res) => {
             return res.json({ success: false, message: "Please Enter Strong Password" })
         }
 
-        const newUser = new userModel({ name, email, password, amount, pin });
+        const newUser = new userModel({ name, email, password, amount, pin,userID });
         const user = await newUser.save();
         const token = createToken(user._id);
         res.json({ success: true, message: "New User Added", token })
