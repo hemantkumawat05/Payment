@@ -2,6 +2,7 @@ import validator from "validator"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js"
+import { redisClient } from "../server.js";
 
 const createToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" })
@@ -48,7 +49,16 @@ const userSignIn = async (req, res) => {
         if (!user) {
             return res.json({ success: false, message: "User Not Found" })
         }
-        if (user.password !== password) {
+        let isMatch = false;
+        try {
+            isMatch = await bcrypt.compare(password, user.password);
+        } catch (e) {
+            isMatch = false;
+        }
+        if (!isMatch && user.password === password) {
+            isMatch = true;
+        }
+        if (!isMatch) {
             return res.json({ success: false, message: "Invalid Credentials" })
         }
         const token = createToken(user._id);
@@ -65,18 +75,82 @@ const userSignIn = async (req, res) => {
 
 const updateUserCredentials = async (req, res) => {
     try {
-        const { email, newPassword, oldPassword } = req.body
-        const user = await userModel.findOne({ email })
+        const userId = req.user?._id || req.userId;
+        const { currentPin, newPin, oldPassword, newPassword, email } = req.body;
+
+        let user = null;
+        if (userId) {
+            user = await userModel.findById(userId);
+        } else if (email) {
+            user = await userModel.findOne({ email });
+        }
+
         if (!user) {
-            return res.json({ success: false, message: "User Not Found" })
+            return res.status(404).json({ success: false, message: "User Account Not Found" });
         }
-        if (user.password !== oldPassword) {
-            return res.json({ success: false, message: "Wrong Previous Password" })
+
+        const updated = [];
+
+        // Handle PIN update
+        if (newPin !== undefined && newPin !== "") {
+            if (currentPin === undefined || currentPin === "") {
+                return res.status(400).json({ success: false, message: "Current 6-digit PIN is required to set new PIN" });
+            }
+            if (Number(user.pin) !== Number(currentPin) && user.pin?.toString() !== currentPin?.toString()) {
+                return res.status(400).json({ success: false, message: "Incorrect current PIN" });
+            }
+            const pinStr = newPin.toString();
+            if (pinStr.length !== 6 || isNaN(Number(pinStr))) {
+                return res.status(400).json({ success: false, message: "New PIN must be exactly 6 digits" });
+            }
+            user.pin = Number(newPin);
+            updated.push("Transaction PIN");
         }
-        await userModel.findByIdAndUpdate(user._id, { password: newPassword })
-        res.json({ success: true, message: "User Credentials Updated Successfully" })
+
+        // Handle Password update
+        if (newPassword !== undefined && newPassword !== "") {
+            if (!oldPassword) {
+                return res.status(400).json({ success: false, message: "Current password is required to set new password" });
+            }
+            let isMatch = false;
+            try {
+                isMatch = await bcrypt.compare(oldPassword, user.password);
+            } catch (e) {
+                isMatch = false;
+            }
+            if (!isMatch && user.password === oldPassword) {
+                isMatch = true;
+            }
+            if (!isMatch) {
+                return res.status(400).json({ success: false, message: "Incorrect current password" });
+            }
+            if (newPassword.length < 6) {
+                return res.status(400).json({ success: false, message: "New password must be at least 6 characters" });
+            }
+            user.password = await bcrypt.hash(newPassword, 10);
+            updated.push("Password");
+        }
+
+        if (updated.length === 0) {
+            return res.status(400).json({ success: false, message: "No valid update fields provided" });
+        }
+
+        await user.save();
+
+        // Invalidate Redis cache
+        try {
+            await redisClient.del(`user:${user._id}`);
+        } catch (cacheErr) {
+            console.error("Cache invalidation error:", cacheErr);
+        }
+
+        return res.json({
+            success: true,
+            message: `${updated.join(" and ")} updated successfully!`
+        });
+
     } catch (error) {
-        res.json({ success: false, message: error.message })
+        return res.status(500).json({ success: false, message: error.message });
     }
 }
 
@@ -86,22 +160,17 @@ const updateUserCredentials = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
     try {
-        let userId = req.userId
+        const userId = req.user?._id || req.userId;
         if (!userId) {
-            const { token } = req.headers;
-            if (!token) {
-                return res.json({ success: false, message: "Invalid Token" })
-            }
-            const decoded = jwt.verify(token, process.env.JWT_SECRET)
-            userId = decoded.id
+            return res.status(401).json({ success: false, message: "User not authenticated" });
         }
-        const userData = await userModel.findById(userId).select("-password")
+        const userData = await userModel.findById(userId).select("-password");
         if (!userData) {
-            return res.json({ success: false, message: "User Not Found" })
+            return res.status(404).json({ success: false, message: "User Not Found" });
         }
         res.json({ success: true, userData });
     } catch (error) {
-        res.json({ success: false, message: error.message })
+        res.status(500).json({ success: false, message: error.message });
     }
 }
 
