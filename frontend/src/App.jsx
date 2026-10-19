@@ -1,38 +1,53 @@
-import React, { useEffect, useState } from 'react'
-import { Route, Routes } from 'react-router-dom'
-import Home from './pages/Home'
-import Signup from './pages/Signup'
-import Login from './pages/Login'
-import Transcations from './controllers/Transcations'
-import Navbar from './pages/Navbar'
-import Setting from './pages/Setting'
-import Profile from './pages/Profile'
+import React from 'react';
+import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Verify from './pages/Verify';
+import Navbar from './pages/Navbar';
+import Setting from './pages/Setting';
+import Profile from './pages/Profile';
+import Transcations from './controllers/Transcations';
+import Logout from './controllers/Logout';
+import { AppData } from './context/AppContext';
+import Loading from './Loading';
+
+export const BACKEND_URL = 'http://localhost:3000';
+
 const App = () => {
-  const [token, setToken] = useState(localStorage.getItem('token') ? localStorage.getItem('token') : "")
-  useEffect(() => {
-    localStorage.setItem('token', token)
-  }, [token])
+  const { isAuth, loading } = AppData();
+
+  if (loading) {
+    return <Loading />;
+  }
+
   return (
-    <div>
-      {token === "" ? (
+    <BrowserRouter>
+      {isAuth && <Navbar />}
+      <div className="min-h-screen bg-[#F8FAFC]">
         <Routes>
-          <Route path='/signup' element={<Signup />} />
-          <Route path='*' element={<Login setToken={setToken} />} />
+          {/* Protected Routes */}
+          <Route path="/" element={isAuth ? <Home /> : <Navigate to="/login" replace />} />
+          <Route path="/transcation" element={isAuth ? <Transcations /> : <Navigate to="/login" replace />} />
+          <Route path="/setting" element={isAuth ? <Setting /> : <Navigate to="/login" replace />} />
+          <Route path="/profile" element={isAuth ? <Profile /> : <Navigate to="/login" replace />} />
+          <Route path="/logout" element={isAuth ? <Logout /> : <Navigate to="/login" replace />} />
+
+          {/* Public & Verification Routes */}
+          <Route path="/login" element={!isAuth ? <Login /> : <Navigate to="/" replace />} />
+          <Route path="/signup" element={!isAuth ? <Signup /> : <Navigate to="/" replace />} />
+          <Route path="/token/:token" element={<Verify />} />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to={isAuth ? "/" : "/login"} replace />} />
         </Routes>
-      ) : (
-        <>
-          <Navbar setToken={setToken} />
-          <Routes>
-            <Route path='/' element={<Home token={token}/>} />
-            <Route path='/transcation' element={<Transcations token={token}/>} />
-            <Route path='/setting' element={<Setting token={token}/>} />
-            <Route path='/profile' element={<Profile token={token}/>} />
+      </div>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} theme="colored" />
+    </BrowserRouter>
+  );
+};
 
-          </Routes>
-        </>
-      )}
-    </div>
-  )
-}
-
-export default App
+export default App;

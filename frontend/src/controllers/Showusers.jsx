@@ -1,94 +1,157 @@
-import axios from 'axios';
-import React from 'react'
-import { useEffect } from 'react';
-import { useState } from 'react'
+import React, { useEffect, useState } from 'react';
+import api from '../apiIntercepter';
 import Sendmoney from './Sendmoney';
 
-const Showusers = ({ token }) => {
-    const [user, setUser] = useState(null);
-    const [selectedUserId, setSelectedUserId] = useState(null)
-
+const Showusers = ({ onSendSuccess }) => {
+    const [users, setUsers] = useState(null);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const getusers = async () => {
         try {
-            const data = await axios.get('http://localhost:3000/api/user/userdata', {
-                headers: { token }
-            })
-            if (data.data && data.data.success) {
-                setUser(data.data.users || [])
+            setLoading(true);
+            const response = await api.get('/api/user/userdata');
+            if (response.data && response.data.success) {
+                setUsers(response.data.users || []);
             } else {
-                setUser([])
+                setUsers([]);
             }
+        } catch (error) {
+            console.error("Error fetching users:", error);
+            setUsers([]);
+        } finally {
+            setLoading(false);
         }
-        catch (error) {
-            console.log(error)
-            setUser([])
-        }
-    }
+    };
 
     useEffect(() => {
-        getusers()
-    }, [token])
+        getusers();
+    }, []);
 
-    if (selectedUserId) {
+    const filteredUsers = (users || []).filter((u) => {
+        const query = searchTerm.toLowerCase();
         return (
-            <div>
-                <button
-                    onClick={() => setSelectedUserId(null)}
-                    className='bg-gray-500 text-white p-2 rounded mb-4 cursor-pointer'
-                >
-                    Back to Users
-                </button>
-                <Sendmoney userId={selectedUserId} token={token} />
+            u.name?.toLowerCase().includes(query) ||
+            u.email?.toLowerCase().includes(query) ||
+            u._id?.toLowerCase().includes(query)
+        );
+    });
+
+    if (selectedUser) {
+        return (
+            <div className="py-4">
+                <Sendmoney
+                    userId={selectedUser._id}
+                    recipient={selectedUser}
+                    onBack={() => setSelectedUser(null)}
+                    onSuccess={() => {
+                        setSelectedUser(null);
+                        getusers();
+                        if (onSendSuccess) onSendSuccess();
+                    }}
+                />
             </div>
         );
     }
 
     return (
-        <div className='border-1 rounded-xl py-3 my-3 px-3'>
-            <div>
-                <h2 className='text-4xl font-bold  mt-3'>Payments User Directory</h2>
-                <p className='text-sm text-gray-500 mt-1 mb-4'>Select any verified registered user to send money directly</p>
-
-
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden p-6 sm:p-8">
+            {/* Header and Search */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 gap-4">
                 <div>
-                    {!user && <p>Loading users...</p>}
-                    {user && user.length === 0 && <p>No users found.</p>}
-
-                    <ul>
-                        <li className='grid grid-cols-5 gap-4 bg-[#E2E8F0] border-[#E2E8F0] rounded-lg border-1 my-2'>
-                                <div className='px-3 py-2 font-bold'>S No.</div>
-                                <div className='px-3 py-2 font-bold'>
-                                    User Name
-                                </div>
-                                <div className='px-40 py-2 font-bold'>Id</div> 
-                                <div className='px-2 py-2 font-bold'>Status</div>
-                                <button className='px-10 py-2 font-bold'>Action</button>
-                            </li>
-                        {user && user.map((e,index) => (
-                            <li key={e._id} className='grid grid-cols-5 gap-4 bg-[#F8FAFC] hover:bg-[#E2E8F0] border-[#E2E8F0] rounded-lg border-1 my-2'>
-                                <div className='px-3 py-2'>{index+1}.</div>
-                                <div className='flex mx-5'>
-                                    <div className='bg-black text-white rounded-full px-3 py-2 mx-3 my-2'>H</div>
-                                    <div>
-                                        <p className='font-bold'>{e.name}</p>
-                                        <p className='text-sm'> {'user@gmail.com'}</p>
-                                    </div>
-                                </div>
-                                <div className='text-gray-700 mx-5 my-2'>{e._id}</div> 
-                                <div className='text-green-600 bg-green-100 my-2 px-3 py-2 rounded-lg mx-5 text-center font-semibold'>Verified</div>
-                                <button onClick={() => setSelectedUserId(e._id)} className='bg-blue-900 text-white hover:bg-blue-800 rounded-lg my-2 px-3'>Send Amount</button>
-                            </li>
-                        ))}
-                    </ul>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Verified User Directory</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                        Send money instantly to registered peers using protected multi-factor routing.
+                    </p>
                 </div>
-
-
-
+                <div className="w-full sm:w-72 relative">
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search by name or email..."
+                        className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-sky-500 focus:bg-white transition-colors"
+                    />
+                    <svg
+                        className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
             </div>
 
-        </div>
-    )
-}
+            {/* User List Table */}
+            <div className="mt-6 overflow-x-auto">
+                {loading && (
+                    <div className="text-center py-12 text-slate-400 text-sm">
+                        Loading directory...
+                    </div>
+                )}
 
-export default Showusers
+                {!loading && filteredUsers.length === 0 && (
+                    <div className="text-center py-12">
+                        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 mb-2">
+                            👥
+                        </div>
+                        <p className="text-slate-600 font-semibold text-sm">No registered users found</p>
+                        <p className="text-slate-400 text-xs mt-1">Try another search term or invite friends to join.</p>
+                    </div>
+                )}
+
+                {!loading && filteredUsers.length > 0 && (
+                    <table className="w-full text-left text-sm">
+                        <thead>
+                            <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                <th className="pb-3 px-3">#</th>
+                                <th className="pb-3 px-4">Account Holder</th>
+                                <th className="pb-3 px-4">Account ID</th>
+                                <th className="pb-3 px-4">Security Status</th>
+                                <th className="pb-3 px-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {filteredUsers.map((u, index) => (
+                                <tr key={u._id} className="hover:bg-slate-50/80 transition-colors">
+                                    <td className="py-3 px-3 text-slate-400 font-mono text-xs">{index + 1}</td>
+                                    <td className="py-3 px-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-sky-500 to-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">
+                                                {u.name?.charAt(0).toUpperCase() || 'U'}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-800 text-sm leading-tight">{u.name}</p>
+                                                <p className="text-xs text-slate-500 leading-tight">{u.email || "user@paytem.com"}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-3 px-4 font-mono text-xs text-slate-500">
+                                        {u._id}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                            ● 2FA Verified
+                                        </span>
+                                    </td>
+                                    <td className="py-3 px-4 text-right">
+                                        <button
+                                            onClick={() => setSelectedUser(u)}
+                                            className="px-4 py-1.5 rounded-lg text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-sm shadow-sky-600/20 transition-all cursor-pointer"
+                                        >
+                                            Send Money
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default Showusers;
